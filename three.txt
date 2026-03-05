@@ -1,0 +1,211 @@
+﻿{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "type": "local",
+        "tag": "dns_local"
+      },
+      {
+        "type": "https",
+        "tag": "dns_remote",
+        "server": "1.1.1.1",
+        "server_port": 443,
+        "path": "/dns-query",
+        "tls": {},
+        "detour": "proxy"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": ["geosite-ads"],
+        "action": "reject",
+        "method": "default"
+      },
+      {
+        "rule_set": ["geosite-cn", "geosite-private"],
+        "action": "route",
+        "server": "dns_local"
+      },
+      {
+        "domain_suffix": [".cn"],
+        "action": "route",
+        "server": "dns_local"
+      }
+    ],
+    "final": "dns_remote",
+    "strategy": "prefer_ipv4",
+    "reverse_mapping": true,
+    "independent_cache": true
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "address": ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
+      "mtu": 1500,
+      "auto_route": true,
+      "strict_route": true,
+      "stack": "system",
+      "endpoint_independent_nat": true,
+      "sniff": true,
+      "sniff_override_destination": false
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "urltest",
+      "tag": "auto",
+      "outbounds": ["vless-reality", "hy2", "tuic"],
+      "url": "https://cp.cloudflare.com/generate_204",
+      "interval": "3m",
+      "tolerance": 100
+    },
+    {
+      "type": "selector",
+      "tag": "proxy",
+      "outbounds": ["auto", "vless-reality", "hy2", "tuic"],
+      "default": "auto"
+    },
+    {
+      "type": "vless",
+      "tag": "vless-reality",
+      "server": "203.0.113.10",
+      "server_port": 443,
+      "uuid": "b0f2a3d4-9e77-4a2a-9b2a-6bf61a7c2b9a",
+      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "learn.microsoft.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "jNXHt1yRo0vDuchQlIP6Z0ZvjT3KtzVI-T4E7RoLJS0",
+          "short_id": "0123456789abcdef"
+        }
+      }
+    },
+    {
+      "type": "hysteria2",
+      "tag": "hy2",
+      "server": "198.51.100.20",
+      "server_port": 8443,
+      "password": "Z7fP1a3nR9kX4m2Q",
+      "up_mbps": 30,
+      "down_mbps": 120,
+      "tls": {
+        "enabled": true,
+        "server_name": "hy2.example.com",
+        "alpn": ["h3"],
+        "insecure": false
+      }
+    },
+    {
+      "type": "tuic",
+      "tag": "tuic",
+      "server": "192.0.2.30",
+      "server_port": 4433,
+      "uuid": "2DD61D93-75D8-4DA4-AC0E-6AECE7EAC365",
+      "password": "tuic-password-demo",
+      "congestion_control": "bbr",
+      "udp_relay_mode": "native",
+      "udp_over_stream": false,
+      "zero_rtt_handshake": false,
+      "heartbeat": "10s",
+      "tls": {
+        "enabled": true,
+        "server_name": "tuic.example.com",
+        "alpn": ["h3"],
+        "insecure": false
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    }
+  ],
+  "route": {
+    "rule_set": [
+      {
+        "tag": "geoip-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+        "download_detour": "direct",
+        "update_interval": "1d"
+      },
+      {
+        "tag": "geosite-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
+        "download_detour": "direct",
+        "update_interval": "1d"
+      },
+      {
+        "tag": "geosite-private",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-private.srs",
+        "download_detour": "direct",
+        "update_interval": "1d"
+      },
+      {
+        "tag": "geosite-ads",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+        "download_detour": "direct",
+        "update_interval": "1d"
+      }
+    ],
+    "rules": [
+      {
+        "port": 53,
+        "action": "hijack-dns"
+      },
+      {
+        "rule_set": ["geosite-ads"],
+        "action": "reject",
+        "method": "default"
+      },
+      {
+        "ip_is_private": true,
+        "action": "route",
+        "outbound": "direct"
+      },
+      {
+        "rule_set": ["geoip-cn"],
+        "action": "route",
+        "outbound": "direct"
+      },
+      {
+        "rule_set": ["geosite-cn", "geosite-private"],
+        "action": "route",
+        "outbound": "direct"
+      },
+      {
+        "domain_suffix": [".cn"],
+        "action": "route",
+        "outbound": "direct"
+      }
+    ],
+    "final": "proxy",
+    "default_domain_resolver": "dns_remote"
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}
