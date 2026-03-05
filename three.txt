@@ -57,18 +57,16 @@
   ],
   "outbounds": [
     {
-      "type": "urltest",
-      "tag": "auto",
-      "outbounds": ["vless-reality", "hy2", "tuic"],
-      "url": "https://cp.cloudflare.com/generate_204",
-      "interval": "3m",
-      "tolerance": 100
+      "type": "selector",
+      "tag": "mode",
+      "outbounds": ["proxy", "direct"],
+      "default": "proxy"
     },
     {
       "type": "selector",
       "tag": "proxy",
-      "outbounds": ["auto", "vless-reality", "hy2", "tuic"],
-      "default": "auto"
+      "outbounds": ["vless-reality", "hy2", "tuic"],
+      "default": "vless-reality"
     },
     {
       "type": "vless",
@@ -141,7 +139,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
-        "download_detour": "direct",
+        "download_detour": "proxy",
         "update_interval": "1d"
       },
       {
@@ -149,7 +147,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
-        "download_detour": "direct",
+        "download_detour": "proxy",
         "update_interval": "1d"
       },
       {
@@ -157,7 +155,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-private.srs",
-        "download_detour": "direct",
+        "download_detour": "proxy",
         "update_interval": "1d"
       },
       {
@@ -165,7 +163,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
-        "download_detour": "direct",
+        "download_detour": "proxy",
         "update_interval": "1d"
       }
     ],
@@ -178,6 +176,11 @@
         "rule_set": ["geosite-ads"],
         "action": "reject",
         "method": "default"
+      },
+      {
+        "domain_suffix": ["githubusercontent.com", "github.com"],
+        "action": "route",
+        "outbound": "proxy"
       },
       {
         "ip_is_private": true,
@@ -200,7 +203,7 @@
         "outbound": "direct"
       }
     ],
-    "final": "proxy",
+    "final": "mode",
     "default_domain_resolver": "dns_remote"
   },
   "experimental": {
